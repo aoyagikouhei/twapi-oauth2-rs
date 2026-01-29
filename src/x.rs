@@ -1,4 +1,10 @@
-use crate::{CodeChallengeMethod, PkceS256, ResponseType, authorize_url, error::OAuth2Error};
+use std::time::Duration;
+
+use reqwest::{StatusCode, header::HeaderMap};
+
+use crate::{
+    CodeChallengeMethod, PkceS256, ResponseType, TokenResult, authorize_url, error::OAuth2Error,
+};
 
 pub enum XScope {
     TweetRead,
@@ -95,24 +101,57 @@ pub const X_AUTHORIZE_URL: &str = "https://x.com/i/oauth2/authorize";
 pub const X_TOKEN_URL: &str = "https://api.x.com/2/oauth2/token";
 
 pub struct XClient {
-    pub client_id: String,
-    pub client_secret: String,
-    pub redirect_uri: String,
+    client_id: String,
+    client_secret: String,
+    redirect_uri: String,
+    scopes: Vec<XScope>,
+    try_count: usize,
+    retry_millis: u64,
+    timeout: Duration,
 }
 
 impl XClient {
-    pub fn new(client_id: &str, client_secret: &str, redirect_uri: &str) -> Self {
+    pub fn new(
+        client_id: &str,
+        client_secret: &str,
+        redirect_uri: &str,
+        scopes: Vec<XScope>,
+    ) -> Self {
+        Self::new_with_token_options(
+            client_id,
+            client_secret,
+            redirect_uri,
+            scopes,
+            3,
+            500,
+            Duration::from_secs(10),
+        )
+    }
+
+    pub fn new_with_token_options(
+        client_id: &str,
+        client_secret: &str,
+        redirect_uri: &str,
+        scopes: Vec<XScope>,
+        try_count: usize,
+        retry_millis: u64,
+        timeout: Duration,
+    ) -> Self {
         Self {
             client_id: client_id.to_string(),
             client_secret: client_secret.to_string(),
             redirect_uri: redirect_uri.to_string(),
+            scopes,
+            try_count,
+            retry_millis,
+            timeout,
         }
     }
 
-    pub fn authorize_url(&self, scopes: &[XScope], state: &str) -> (String, String) {
+    pub fn authorize_url(&self, state: &str) -> (String, String) {
         let pkce = PkceS256::new();
 
-        let scopes_str = XScope::scopes_to_string(scopes);
+        let scopes_str = XScope::scopes_to_string(&self.scopes);
         (
             authorize_url(
                 X_AUTHORIZE_URL,
@@ -128,29 +167,25 @@ impl XClient {
         )
     }
 
-    pub async fn token(&self, code: &str, code_verifier: &str) -> Result<serde_json::Value, OAuth2Error> {
-        let params = [
-            ("grant_type", "authorization_code"),
-            ("code", code),
-            ("redirect_uri", &self.redirect_uri),
-            ("client_id", &self.client_id),
-            ("code_verifier", code_verifier),
-        ];
-
-        let client = reqwest::Client::new();
-        let res = client
-            .post(X_TOKEN_URL)
-            .form(&params)
-            .basic_auth(&self.client_id, Some(&self.client_secret))
-            .send()
-            .await?;
-
-        if !res.status().is_success() {
-            return Err(OAuth2Error::Invalid(format!("Failed to get token: {}", res.status())));
-        }
-
-        let json: serde_json::Value = res.json().await?;
-        Ok(json)
+    pub async fn token(
+        &self,
+        code: &str,
+        code_verifier: &str,
+    ) -> Result<(TokenResult, StatusCode, HeaderMap), OAuth2Error> {
+        let (token_json, status_code, headers) = crate::token(
+            X_TOKEN_URL,
+            &self.client_id,
+            &self.client_secret,
+            &self.redirect_uri,
+            code,
+            code_verifier,
+            "authorization_code",
+            self.timeout,
+            self.try_count,
+            self.retry_millis,
+        )
+        .await?;
+        Ok((token_json, status_code, headers))
     }
 }
 
@@ -167,8 +202,8 @@ mod tests {
         let client_secret = std::env::var("CLIENT_SECRET").unwrap();
         let redirect_url = std::env::var("REDIRECT_URL").unwrap();
         let state = "test_state";
-        let x_client = XClient::new(&client_id, &client_secret, &redirect_url);
-        let (auth_url, code_verifier) = x_client.authorize_url(&XScope::all(), state);
+        let x_client = XClient::new(&client_id, &client_secret, &redirect_url, XScope::all());
+        let (auth_url, code_verifier) = x_client.authorize_url(state);
         println!("Authorize URL: {}", auth_url);
         println!("Code Verifier: {}", code_verifier);
     }
