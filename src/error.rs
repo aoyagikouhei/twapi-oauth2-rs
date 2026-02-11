@@ -2,7 +2,7 @@ use reqwest::{StatusCode, header::HeaderMap};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum OAuth2Error {
+pub enum Error {
     #[error("Reqwest {0}")]
     Reqwest(#[from] reqwest::Error),
 
