@@ -1,5 +1,5 @@
 [package]
-name = "oauth-web"
+name = "oauth-web1a"
 version = "0.1.0"
 edition = "2024"
 
@@ -8,7 +8,7 @@ axum = "0.8.8"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tower-cookies = "0.11.0"
-twapi-oauth2 = { path="../.." }
+twapi-oauth2 = { path="../..", default-features = false, features = ["oauth1a"] }
 
 [features]
 oauth1a = []

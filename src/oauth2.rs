@@ -1,13 +1,12 @@
+use base64::prelude::*;
 use std::time::Duration;
 
-use base64::{Engine, prelude::BASE64_URL_SAFE_NO_PAD};
 use query_string_builder::QueryString;
 use reqwest::{StatusCode, header::HeaderMap};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 
 use crate::{error::Error, execute_retry};
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TokenResult {

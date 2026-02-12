@@ -6,7 +6,7 @@ use axum::{
 };
 use std::collections::HashMap;
 use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
-use twapi_oauth2::x::{XClient, XScope};
+use twapi_oauth2::oauth2::{XClient, XScope};
 
 // API_KEY_CODE=xxx API_SECRET_CODE=xxx CALLBACK_URL=http://localhost:3000/oauth cargo run
 

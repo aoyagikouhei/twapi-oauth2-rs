@@ -13,16 +13,24 @@ documentation = "https://docs.rs/twapi-oauth2"
 
 [dependencies]
 base64 = "0.22"
-query-string-builder = "0.6"
+chrono = { version = "0.4", features = [ "serde" ] }
+form_urlencoded = { version = "1.2", optional = true }
+hmac = { version = "0.12", optional = true }
+query-string-builder = { version = "0.6", optional = true }
 rand = "0.10"
 reqwest = { version = "0.13", features = ["json", "query", "form"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sha2 = "0.10"
+sha1 = { version = "0.10", optional = true }
+sha2 = { version = "0.10", optional = true }
 thiserror = "2"
 tokio = { version = "1", features = ["time"] }
-url = "2"
 
 [dev-dependencies]
 anyhow = "1"
 tokio = { version = "1", features = ["macros"] }
+
+[features]
+default = ["oauth2"]
+oauth1a = ["hmac", "form_urlencoded", "sha1"]
+oauth2 = ["query-string-builder", "sha2"]
