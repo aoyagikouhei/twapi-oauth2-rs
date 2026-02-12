@@ -14,6 +14,7 @@ pub use reqwest;
 
 use crate::error::Error;
 
+#[allow(dead_code)]
 pub(crate) async fn execute_retry<T>(
     f: impl Fn() -> RequestBuilder,
     try_count: usize,
@@ -48,12 +49,12 @@ where
     unreachable!()
 }
 
+#[allow(dead_code)]
 pub(crate) async fn execute_retry_body(
     f: impl Fn() -> RequestBuilder,
     try_count: usize,
     retry_millis: u64,
-) -> Result<(String, StatusCode, HeaderMap), Error>
-{
+) -> Result<(String, StatusCode, HeaderMap), Error> {
     for i in 0..try_count {
         let req = f();
         let res = req.send().await?;

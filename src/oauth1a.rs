@@ -53,11 +53,7 @@ pub struct OAuth1aClient {
 }
 
 impl OAuth1aClient {
-     pub fn new(
-        consumer_key: &str,
-        consumer_secret: &str,
-        callback_url: &str,
-    ) -> Self {
+    pub fn new(consumer_key: &str, consumer_secret: &str, callback_url: &str) -> Self {
         Self::new_with_options(
             consumer_key,
             consumer_secret,
