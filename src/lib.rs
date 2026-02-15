@@ -80,3 +80,11 @@ pub(crate) async fn execute_retry_body(
     }
     unreachable!()
 }
+
+pub(crate) fn make_url(base_url: &str, path: &str, prefix_url: &Option<String>) -> String {
+    if let Some(prefix_url) = prefix_url {
+        format!("{}{}", prefix_url, path)
+    } else {
+        format!("{}{}", base_url, path)
+    }
+}

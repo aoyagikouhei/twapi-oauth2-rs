@@ -1,13 +1,14 @@
-use crate::{error::Error, execute_retry_body, oauth1a::calc_oauth1a::calc_oauth_header};
+use crate::{error::Error, execute_retry_body, make_url, oauth1a::calc_oauth1a::calc_oauth_header};
 use reqwest::{StatusCode, header::HeaderMap};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, time::Duration};
 
 pub mod calc_oauth1a;
 
-const REQUEST_TOKEN_URL: &str = "https://api.x.com/oauth/request_token";
+const BASE_URL_PREFIX: &str = "https://api.x.com";
+const REQUEST_TOKEN_URL_POSTFIX: &str = "/oauth/request_token";
+const ACCESS_TOKEN_URL_POSTFIX: &str = "/oauth/access_token";
 const AUTHORIZE_URL: &str = "https://api.x.com/oauth/authorize?oauth_token=";
-const ACCESS_TOKEN_URL: &str = "https://api.x.com/oauth/access_token";
 
 pub enum XAuthAccessType {
     Read,
@@ -50,6 +51,7 @@ pub struct OAuth1aClient {
     try_count: usize,
     retry_millis: u64,
     timeout: Duration,
+    prefix_url: Option<String>,
 }
 
 impl OAuth1aClient {
@@ -61,9 +63,11 @@ impl OAuth1aClient {
             3,
             500,
             Duration::from_secs(10),
+            None,
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new_with_options(
         consumer_key: &str,
         consumer_secret: &str,
@@ -71,6 +75,7 @@ impl OAuth1aClient {
         try_count: usize,
         retry_millis: u64,
         timeout: Duration,
+        prefix_url: Option<String>,
     ) -> Self {
         OAuth1aClient {
             consumer_key: consumer_key.to_string(),
@@ -79,6 +84,7 @@ impl OAuth1aClient {
             try_count,
             retry_millis,
             timeout,
+            prefix_url,
         }
     }
 
@@ -90,12 +96,13 @@ impl OAuth1aClient {
         if let Some(x_auth_access_type) = x_auth_access_type.as_ref() {
             header_options.push(("x_auth_access_type", x_auth_access_type.as_str()));
         }
+        let url = make_url(BASE_URL_PREFIX, REQUEST_TOKEN_URL_POSTFIX, &self.prefix_url);
         let signed = calc_oauth_header(
             &format!("{}&", self.consumer_secret),
             &self.consumer_key,
             &header_options,
             "POST",
-            REQUEST_TOKEN_URL,
+            &url,
             &vec![],
         );
         let signed = format!("OAuth {}", signed);
@@ -104,7 +111,7 @@ impl OAuth1aClient {
         let (res, _, _): (String, StatusCode, HeaderMap) = execute_retry_body(
             || {
                 client
-                    .post(REQUEST_TOKEN_URL)
+                    .post(&url)
                     .header("Authorization", &signed)
                     .timeout(self.timeout)
             },
@@ -133,6 +140,7 @@ impl OAuth1aClient {
         oauth_token_secret: &str,
         oauth_verifier: &str,
     ) -> Result<AccessToken, Error> {
+        let url = make_url(BASE_URL_PREFIX, ACCESS_TOKEN_URL_POSTFIX, &self.prefix_url);
         let signed = calc_oauth_header(
             &format!("{}&{}", self.consumer_secret, oauth_token_secret),
             &self.consumer_key,
@@ -141,7 +149,7 @@ impl OAuth1aClient {
                 ("oauth_verifier", oauth_verifier),
             ],
             "POST",
-            ACCESS_TOKEN_URL,
+            &url,
             &vec![],
         );
         let signed = format!("OAuth {}", signed);
@@ -149,7 +157,7 @@ impl OAuth1aClient {
         let (res, _, _): (String, StatusCode, HeaderMap) = execute_retry_body(
             || {
                 client
-                    .post(ACCESS_TOKEN_URL)
+                    .post(&url)
                     .header("Authorization", &signed)
                     .timeout(self.timeout)
             },

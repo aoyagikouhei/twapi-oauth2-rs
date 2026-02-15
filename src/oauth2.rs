@@ -6,7 +6,7 @@ use reqwest::{StatusCode, header::HeaderMap};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 
-use crate::{error::Error, execute_retry};
+use crate::{error::Error, execute_retry, make_url};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TokenResult {
@@ -225,7 +225,9 @@ impl std::fmt::Display for XScope {
 }
 
 pub const X_AUTHORIZE_URL: &str = "https://x.com/i/oauth2/authorize";
-pub const X_TOKEN_URL: &str = "https://api.x.com/2/oauth2/token";
+
+const URL_POSTFIX: &str = "https://api.x.com";
+pub const X_TOKEN_URL_PREFIX: &str = "/2/oauth2/token";
 
 pub struct XClient {
     client_id: String,
@@ -235,6 +237,7 @@ pub struct XClient {
     try_count: usize,
     retry_millis: u64,
     timeout: Duration,
+    prefix_url: Option<String>,
 }
 
 impl XClient {
@@ -252,9 +255,11 @@ impl XClient {
             3,
             500,
             Duration::from_secs(10),
+            None,
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new_with_token_options(
         client_id: &str,
         client_secret: &str,
@@ -263,6 +268,7 @@ impl XClient {
         try_count: usize,
         retry_millis: u64,
         timeout: Duration,
+        prefix_url: Option<String>,
     ) -> Self {
         Self {
             client_id: client_id.to_string(),
@@ -272,6 +278,7 @@ impl XClient {
             try_count,
             retry_millis,
             timeout,
+            prefix_url,
         }
     }
 
@@ -300,7 +307,7 @@ impl XClient {
         code_verifier: &str,
     ) -> Result<(TokenResult, StatusCode, HeaderMap), Error> {
         let (token_json, status_code, headers) = token(
-            X_TOKEN_URL,
+            &make_url(URL_POSTFIX, X_TOKEN_URL_PREFIX, &self.prefix_url),
             &self.client_id,
             &self.client_secret,
             &self.redirect_uri,
