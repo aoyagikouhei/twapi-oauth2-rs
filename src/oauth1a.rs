@@ -49,7 +49,7 @@ pub struct OAuth1aClient {
     consumer_secret: String,
     callback_url: String,
     try_count: usize,
-    retry_millis: u64,
+    retry_duration: Duration,
     timeout: Duration,
     prefix_url: Option<String>,
 }
@@ -61,7 +61,7 @@ impl OAuth1aClient {
             consumer_secret,
             callback_url,
             3,
-            500,
+            Duration::from_millis(100),
             Duration::from_secs(10),
             None,
         )
@@ -73,7 +73,7 @@ impl OAuth1aClient {
         consumer_secret: &str,
         callback_url: &str,
         try_count: usize,
-        retry_millis: u64,
+        retry_duration: Duration,
         timeout: Duration,
         prefix_url: Option<String>,
     ) -> Self {
@@ -82,7 +82,7 @@ impl OAuth1aClient {
             consumer_secret: consumer_secret.to_string(),
             callback_url: callback_url.to_string(),
             try_count,
-            retry_millis,
+            retry_duration,
             timeout,
             prefix_url,
         }

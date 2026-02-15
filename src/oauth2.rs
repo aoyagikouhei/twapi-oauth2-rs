@@ -107,7 +107,7 @@ pub(crate) async fn token(
     grant_type: &str,
     timeout: Duration,
     try_count: usize,
-    retry_millis: u64,
+    retry_duration: Duration,
 ) -> Result<(TokenResult, StatusCode, HeaderMap), Error> {
     let params = [
         ("grant_type", grant_type),
@@ -128,7 +128,7 @@ pub(crate) async fn token(
                 .timeout(timeout)
         },
         try_count,
-        retry_millis,
+        retry_duration,
     )
     .await
 }
@@ -235,7 +235,7 @@ pub struct XClient {
     redirect_uri: String,
     scopes: Vec<XScope>,
     try_count: usize,
-    retry_millis: u64,
+    retry_duration: Duration,
     timeout: Duration,
     prefix_url: Option<String>,
 }
@@ -253,7 +253,7 @@ impl XClient {
             redirect_uri,
             scopes,
             3,
-            500,
+            Duration::from_millis(100),
             Duration::from_secs(10),
             None,
         )
@@ -266,7 +266,7 @@ impl XClient {
         redirect_uri: &str,
         scopes: Vec<XScope>,
         try_count: usize,
-        retry_millis: u64,
+        retry_duration: Duration,
         timeout: Duration,
         prefix_url: Option<String>,
     ) -> Self {
@@ -276,7 +276,7 @@ impl XClient {
             redirect_uri: redirect_uri.to_string(),
             scopes,
             try_count,
-            retry_millis,
+            retry_duration,
             timeout,
             prefix_url,
         }
@@ -316,7 +316,7 @@ impl XClient {
             "authorization_code",
             self.timeout,
             self.try_count,
-            self.retry_millis,
+            self.retry_duration,
         )
         .await?;
         Ok((token_json, status_code, headers))

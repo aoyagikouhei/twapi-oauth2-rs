@@ -1,5 +1,8 @@
 ## Changes
 
+### v0.4.0 (2026/02/16)
+* Change retry_millis to retry_duration
+
 ### v0.3.0 (2026/02/16)
 * Add to support mock
 
