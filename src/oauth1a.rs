@@ -116,7 +116,7 @@ impl OAuth1aClient {
                     .timeout(self.timeout)
             },
             self.try_count,
-            self.retry_millis,
+            self.retry_duration,
         )
         .await?;
         let map = parse_oauth_body(res);
@@ -162,7 +162,7 @@ impl OAuth1aClient {
                     .timeout(self.timeout)
             },
             self.try_count,
-            self.retry_millis,
+            self.retry_duration,
         )
         .await?;
         let map = parse_oauth_body(res);
