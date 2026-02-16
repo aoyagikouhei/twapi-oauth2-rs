@@ -133,6 +133,38 @@ pub(crate) async fn token(
     .await
 }
 
+pub async fn refresh_token(
+    client_id: &str,
+    client_secret: &str,
+    refresh_token: &str,
+    timeout: Duration,
+    try_count: usize,
+    retry_duration: Duration,
+    prefix_url: Option<String>,
+) -> Result<(TokenResult, StatusCode, HeaderMap), Error> {
+    let url = &make_url(URL_POSTFIX, X_TOKEN_URL_PREFIX, &prefix_url);
+    let params = [
+        ("grant_type", "refresh_token"),
+        ("refresh_token", refresh_token),
+        ("client_id", client_id),
+    ];
+
+    let client = reqwest::Client::new();
+
+    execute_retry(
+        || {
+            client
+                .post(url)
+                .form(&params)
+                .basic_auth(client_id, Some(client_secret))
+                .timeout(timeout)
+        },
+        try_count,
+        retry_duration,
+    )
+    .await
+}
+
 pub enum XScope {
     TweetRead,
     TweetWrite,
