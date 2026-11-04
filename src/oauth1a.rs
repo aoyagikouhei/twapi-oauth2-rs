@@ -106,7 +106,6 @@ impl OAuth1aClient {
             &vec![],
         );
         let signed = format!("OAuth {}", signed);
-        println!("signed: {}", signed);
         let client = reqwest::Client::new();
         let (res, _, _): (String, StatusCode, HeaderMap) = execute_retry_body(
             || {

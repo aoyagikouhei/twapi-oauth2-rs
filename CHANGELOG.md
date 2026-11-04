@@ -1,5 +1,8 @@
 ## Changes
 
+### v0.4.2 (2026/11/04)
+* Remove debug print of signed OAuth header
+
 ### v0.4.1 (2026/02/16)
 * Add refresh_token api
 
